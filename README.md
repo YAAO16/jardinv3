@@ -1,4 +1,4 @@
-# JBV2 - Sistema de Inventario Forestal con Servicios Ecosistémicos
+# JBV3 - Sistema de Inventario Forestal con Servicios Ecosistémicos
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
@@ -31,5 +31,5 @@
 
 ### 1. Clonar el repositorio
 ```bash
-git clone https://github.com/YAAO16/JBV2.git
-cd JBV2
+git clone https://github.com/YAAO16/jardinv3.git
+cd jardinv3

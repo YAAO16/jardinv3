@@ -1,17 +1,25 @@
 cff-version: 1.2.0
-title: JBV2 - Sistema de Inventario Forestal con Servicios Ecosistémicos
-message: Si usas este software, por favor cítalo como se indica.
+title: "JBV2 - Sistema de Inventario Forestal con Servicios Ecosistémicos"
+message: "Si usas este software, por favor cítalo como se indica a continuación."
 type: software
+
 authors:
-  - family-names: "ORDOÑEZ"
-    given-names: "ADRIAN"
-    orcid: "https://orcid.org/tu-orcid"
-  - family-names: "Coautor"
-repository-code: "https://github.com/YAAO16/JBV2"
+  - family-names: "Ordoñez"
+    given-names: "Adrián"
+    orcid: "https://orcid.org/0000-0000-0000-0000"   # ← Reemplazar con tu ORCID real
+  
+
+repository-code: "https://github.com/YAAO16/jardinv3.git"
 url: "https://ecoatlas.lat/"
-abstract: "Sistema de gestión de inventario forestal con modelos alométricos, georreferenciación y exportación a estándares internacionales (Darwin Core)."
+abstract: >
+  Sistema de gestión de inventario forestal con modelos alométricos,
+  georreferenciación y exportación a estándares internacionales (Darwin Core).
+  Incluye cálculo de biomasa, carbono y CO₂e, integración con imágenes
+  Sentinel-2 e índices de vegetación (NDVI).
+
 license: MIT
 date-released: 2026-09-03
+
 keywords:
   - inventario forestal
   - biomasa
@@ -21,3 +29,5 @@ keywords:
   - NDVI
   - Darwin Core
   - GBIF
+  - modelos alométricos
+  - georreferenciación
