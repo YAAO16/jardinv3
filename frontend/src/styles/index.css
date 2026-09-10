@@ -1,0 +1,42 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#f8faf8] text-[#1a1a1a] font-sans antialiased;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-forest-600 hover:bg-forest-700 text-white font-semibold py-2 px-6 rounded-lg transition duration-200 shadow-md hover:shadow-lg;
+  }
+  .btn-secondary {
+    @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-6 rounded-lg transition duration-200;
+  }
+  .card {
+    @apply bg-white p-6 rounded-2xl shadow-lg border border-gray-100;
+  }
+  .input-field {
+    @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-forest-500 focus:border-transparent outline-none transition;
+  }
+  .label {
+    @apply block text-sm font-medium text-gray-700 mb-1;
+  }
+}
+
+/* Estilos para el sidebar de administración */
+.admin-sidebar-btn {
+  transition: all 0.2s ease;
+}
+
+.admin-sidebar-btn:hover {
+  background-color: #f0f7f0;
+}
+
+.admin-sidebar-btn.active {
+  background-color: #e3f0e3;
+  color: #1a4d2e;
+}

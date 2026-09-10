@@ -1,0 +1,11 @@
+.vscode/
+.idea/
+*.env
+*.log
+comandos.txt
+__pycache__/
+*.pyc
+venv/
+.venv/
+node_modules/
+dist/

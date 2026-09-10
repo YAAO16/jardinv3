@@ -1,0 +1,968 @@
+openapi: 3.0.0
+info:
+  title: API Inventario Forestal JBV2
+  description: |
+    Sistema de gestión de inventario forestal con servicios ecosistémicos.
+    
+    ## Funcionalidades principales
+    - **Autenticación**: Login con JWT.
+    - **Usuarios**: CRUD completo (solo administradores).
+    - **Especies**: CRUD completo.
+    - **Árboles**: CRUD, mapa, subida de imágenes y cálculos automáticos (biomasa, carbono, CO₂e, área basal, volumen).
+    - **Atributos dinámicos**: Gestión de campos adicionales para árboles.
+    - **Reportes**: 6 endpoints de estadísticas.
+    - **Exportación Darwin Core**: Compatible con GBIF y SiB Colombia (JSON y CSV).
+    - **NDVI**: Cálculo del Índice de Vegetación de Diferencia Normalizada usando Sentinel-2.
+    - **Administración**: Estructura de tablas para gestión de campos.
+  version: 2.0.0
+  contact:
+    name: Soporte JBV2
+    email: soporte@jbv2.com
+servers:
+  - url: http://localhost:8001
+    description: Servidor de desarrollo
+security:
+  - X-UsuarioID: []
+  - BearerAuth: []
+
+paths:
+  # ============================================================
+  # AUTENTICACIÓN
+  # ============================================================
+  /auth/login:
+    post:
+      summary: Iniciar sesión
+      tags: [Autenticación]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [usuario, contrasena]
+              properties:
+                usuario:
+                  type: string
+                  example: adminjbitp
+                contrasena:
+                  type: string
+                  example: Admin@itp
+      responses:
+        '200':
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: Token JWT
+                  UsuarioID:
+                    type: integer
+                  usuario:
+                    type: string
+                  Rol:
+                    type: string
+        '401':
+          description: Credenciales inválidas
+
+  # ============================================================
+  # USUARIOS (solo administradores)
+  # ============================================================
+  /usuarios:
+    get:
+      summary: Obtener todos los usuarios
+      tags: [Usuarios]
+      security: [{ X-UsuarioID: [] }]
+      responses:
+        '200':
+          description: Lista de usuarios
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    UsuarioID:
+                      type: integer
+                    Usuario:
+                      type: string
+                    RolID:
+                      type: integer
+    post:
+      summary: Crear un nuevo usuario
+      tags: [Usuarios]
+      security: [{ X-UsuarioID: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [Usuario, Contrasena]
+              properties:
+                Usuario:
+                  type: string
+                Contrasena:
+                  type: string
+                RolID:
+                  type: integer
+                  default: 1
+      responses:
+        '201':
+          description: Usuario creado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  id:
+                    type: integer
+
+  /usuarios/{usuario_id}:
+    put:
+      summary: Actualizar un usuario
+      tags: [Usuarios]
+      security: [{ X-UsuarioID: [] }]
+      parameters:
+        - name: usuario_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Usuario:
+                  type: string
+                Contrasena:
+                  type: string
+                RolID:
+                  type: integer
+      responses:
+        '200':
+          description: Usuario actualizado
+    delete:
+      summary: Eliminar un usuario
+      tags: [Usuarios]
+      security: [{ X-UsuarioID: [] }]
+      parameters:
+        - name: usuario_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Usuario eliminado
+
+  # ============================================================
+  # ESPECIES
+  # ============================================================
+  /especies:
+    get:
+      summary: Obtener todas las especies
+      tags: [Especies]
+      security: [{ X-UsuarioID: [] }]
+      responses:
+        '200':
+          description: Lista de especies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    EspecieID:
+                      type: integer
+                    NombreComun:
+                      type: string
+                    NombreCientifico:
+                      type: string
+                    Familia:
+                      type: string
+                    Categoria:
+                      type: string
+                    UsuarioID:
+                      type: integer
+                    fecha_creacion:
+                      type: string
+                      format: date-time
+                    fecha_actualizacion:
+                      type: string
+                      format: date-time
+    post:
+      summary: Crear una nueva especie
+      tags: [Especies]
+      security: [{ X-UsuarioID: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [NombreComun, NombreCientifico, Categoria]
+              properties:
+                NombreComun:
+                  type: string
+                  example: Cedro
+                NombreCientifico:
+                  type: string
+                  example: Cedrela odorata
+                Familia:
+                  type: string
+                  example: Meliaceae
+                Categoria:
+                  type: string
+                  enum: [Parcela, Sendero]
+                  example: Parcela
+      responses:
+        '201':
+          description: Especie creada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  id:
+                    type: integer
+
+  /especies/{especie_id}:
+    get:
+      summary: Obtener una especie por ID
+      tags: [Especies]
+      security: [{ X-UsuarioID: [] }]
+      parameters:
+        - name: especie_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Especie encontrada
+        '404':
+          description: Especie no encontrada
+    put:
+      summary: Actualizar una especie
+      tags: [Especies]
+      security: [{ X-UsuarioID: [] }]
+      parameters:
+        - name: especie_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                NombreComun:
+                  type: string
+                NombreCientifico:
+                  type: string
+                Familia:
+                  type: string
+                Categoria:
+                  type: string
+      responses:
+        '200':
+          description: Especie actualizada
+    delete:
+      summary: Eliminar una especie
+      tags: [Especies]
+      security: [{ X-UsuarioID: [] }]
+      parameters:
+        - name: especie_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Especie eliminada
+
+  # ============================================================
+  # ÁRBOLES
+  # ============================================================
+  /arboles:
+    get:
+      summary: Obtener todos los árboles
+      tags: [Árboles]
+      security: [{ X-UsuarioID: [] }]
+      responses:
+        '200':
+          description: Lista de árboles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    MedicionArbolID:
+                      type: integer
+                    EspecieID:
+                      type: integer
+                    NumeroArbol:
+                      type: string
+                    DAP_M:
+                      type: number
+                    AlturaTotal_Mts:
+                      type: number
+                    DensidadMadera:
+                      type: number
+                    BiomasaAerea_kg:
+                      type: number
+                    Carbono_kg:
+                      type: number
+                    CO2e_kg:
+                      type: number
+                    AreaBasal_M2:
+                      type: number
+                    DAP_M_REDONDEO:
+                      type: number
+                    VolumenTotal_M3:
+                      type: number
+                    Latitud:
+                      type: number
+                    Longitud:
+                      type: number
+                    EstadoSanitario:
+                      type: string
+                    NDVI:
+                      type: number
+                      description: Índice de Vegetación NDVI (Sentinel-2)
+                    NDVI_fecha:
+                      type: string
+                      format: date
+                    ImagenURL:
+                      type: string
+    post:
+      summary: Crear un nuevo árbol (con cálculos automáticos)
+      tags: [Árboles]
+      security: [{ X-UsuarioID: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [EspecieID, NumeroArbol, EstadoSanitario]
+              properties:
+                EspecieID:
+                  type: integer
+                NumeroArbol:
+                  type: string
+                Factor:
+                  type: number
+                CAP_Cm:
+                  type: number
+                CAP_M:
+                  type: number
+                DAP_M:
+                  type: number
+                AlturaTotal_Mts:
+                  type: number
+                AlturaComercial_Mts:
+                  type: number
+                DensidadMadera:
+                  type: number
+                PuntoGPS:
+                  type: integer
+                Latitud:
+                  type: number
+                Longitud:
+                  type: number
+                ProyeccionCopa_X:
+                  type: boolean
+                ProyeccionCopa_Y:
+                  type: boolean
+                EstadoSanitario:
+                  type: string
+                  enum: [BUENO, REGULAR, MALO]
+                PresenciaEpifitas:
+                  type: boolean
+                PresenciaNidos:
+                  type: boolean
+                PresenciaOtraFauna:
+                  type: boolean
+                Observaciones:
+                  type: string
+                Transecto:
+                  type: integer
+      responses:
+        '201':
+          description: Árbol creado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  id:
+                    type: integer
+
+  /arboles/mapa:
+    get:
+      summary: Obtener árboles georreferenciados para el mapa
+      tags: [Árboles]
+      security: [{ X-UsuarioID: [] }]
+      responses:
+        '200':
+          description: Lista de árboles con coordenadas
+
+  /arboles/{arbol_id}:
+    get:
+      summary: Obtener un árbol por ID
+      tags: [Árboles]
+      security: [{ X-UsuarioID: [] }]
+      parameters:
+        - name: arbol_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Árbol encontrado
+        '404':
+          description: Árbol no encontrado
+    put:
+      summary: Actualizar un árbol (recalcula servicios ecosistémicos)
+      tags: [Árboles]
+      security: [{ X-UsuarioID: [] }]
+      parameters:
+        - name: arbol_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                EspecieID:
+                  type: integer
+                NumeroArbol:
+                  type: string
+                DAP_M:
+                  type: number
+                AlturaTotal_Mts:
+                  type: number
+                DensidadMadera:
+                  type: number
+                EstadoSanitario:
+                  type: string
+      responses:
+        '200':
+          description: Árbol actualizado
+    delete:
+      summary: Eliminar un árbol
+      tags: [Árboles]
+      security: [{ X-UsuarioID: [] }]
+      parameters:
+        - name: arbol_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Árbol eliminado
+
+  /arboles/{arbol_id}/imagen:
+    post:
+      summary: Subir imagen para un árbol
+      tags: [Árboles]
+      security: [{ X-UsuarioID: [] }]
+      parameters:
+        - name: arbol_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                imagen:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Imagen subida correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  url:
+                    type: string
+
+  # ============================================================
+  # ATRIBUTOS DINÁMICOS (para árboles)
+  # ============================================================
+  /atributos:
+    get:
+      summary: Obtener todos los atributos dinámicos
+      tags: [Atributos]
+      security: [{ X-UsuarioID: [] }]
+      responses:
+        '200':
+          description: Lista de atributos
+    post:
+      summary: Crear un atributo dinámico
+      tags: [Atributos]
+      security: [{ X-UsuarioID: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                MedicionArbolID:
+                  type: integer
+                NombreCampo:
+                  type: string
+                ValorTexto:
+                  type: string
+                ValorNumero:
+                  type: number
+                ValorFecha:
+                  type: string
+                  format: date
+                ValorBooleano:
+                  type: boolean
+      responses:
+        '201':
+          description: Atributo creado
+
+  /atributos/{id}:
+    put:
+      summary: Actualizar un atributo dinámico
+      tags: [Atributos]
+      security: [{ X-UsuarioID: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Atributo actualizado
+    delete:
+      summary: Eliminar un atributo dinámico
+      tags: [Atributos]
+      security: [{ X-UsuarioID: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Atributo eliminado
+
+  # ============================================================
+  # REPORTES
+  # ============================================================
+  /reportes/estadisticas-generales:
+    get:
+      summary: Estadísticas generales del inventario
+      tags: [Reportes]
+      security: [{ X-UsuarioID: [] }]
+      responses:
+        '200':
+          description: Estadísticas generales
+  /reportes/distribucion-especies:
+    get:
+      summary: Distribución de árboles por especie
+      tags: [Reportes]
+      security: [{ X-UsuarioID: [] }]
+      responses:
+        '200':
+          description: Distribución por especie
+  /reportes/estado-sanitario:
+    get:
+      summary: Estado sanitario de los árboles
+      tags: [Reportes]
+      security: [{ X-UsuarioID: [] }]
+      responses:
+        '200':
+          description: Estado sanitario
+  /reportes/top-especies-volumen:
+    get:
+      summary: Top 10 especies por volumen
+      tags: [Reportes]
+      security: [{ X-UsuarioID: [] }]
+      responses:
+        '200':
+          description: Top especies por volumen
+  /reportes/distribucion-dap:
+    get:
+      summary: Distribución de DAP en clases diamétricas
+      tags: [Reportes]
+      security: [{ X-UsuarioID: [] }]
+      responses:
+        '200':
+          description: Distribución DAP
+  /reportes/presencia-fauna:
+    get:
+      summary: Presencia de fauna en árboles
+      tags: [Reportes]
+      security: [{ X-UsuarioID: [] }]
+      responses:
+        '200':
+          description: Presencia de fauna
+
+  # ============================================================
+  # EXPORTACIÓN DARWIN CORE
+  # ============================================================
+  /exportar/darwin-core:
+    get:
+      summary: Exportar datos en formato Darwin Core (JSON)
+      tags: [Exportación]
+      security: [{ X-UsuarioID: [] }]
+      responses:
+        '200':
+          description: Datos en formato Darwin Core
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    dwc:occurrenceID:
+                      type: string
+                    dwc:scientificName:
+                      type: string
+                    dwc:decimalLatitude:
+                      type: number
+                    dwc:decimalLongitude:
+                      type: number
+                    dwc:geodeticDatum:
+                      type: string
+                    dwc:eventDate:
+                      type: string
+                    dwc:organismQuantity:
+                      type: integer
+                    dwc:organismQuantityType:
+                      type: string
+                    dwc:healthState:
+                      type: string
+  /exportar/darwin-core/csv:
+    get:
+      summary: Exportar datos en formato Darwin Core (CSV)
+      tags: [Exportación]
+      security: [{ X-UsuarioID: [] }]
+      responses:
+        '200':
+          description: Archivo CSV
+          content:
+            text/csv:
+              schema:
+                type: string
+
+  # ============================================================
+  # NDVI (SENTINEL-2)
+  # ============================================================
+  /ndvi/{latitud}/{longitud}:
+    get:
+      summary: Obtener NDVI por coordenadas (Sentinel-2)
+      description: Calcula el NDVI para una coordenada geográfica sin guardarlo en la base de datos. Útil para pruebas o consultas rápidas.
+      tags: [NDVI]
+      security: [{ X-UsuarioID: [] }]
+      parameters:
+        - name: latitud
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "-12.123456"
+          description: Latitud en grados decimales (EPSG:4326). Puede ser negativa.
+        - name: longitud
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "-77.123456"
+          description: Longitud en grados decimales (EPSG:4326). Puede ser negativa.
+      responses:
+        '200':
+          description: NDVI calculado correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  latitud:
+                    type: number
+                    example: -12.123456
+                  longitud:
+                    type: number
+                    example: -77.123456
+                  ndvi:
+                    type: number
+                    description: Índice de Vegetación de Diferencia Normalizada (entre -1 y 1)
+                    example: 0.7234
+                  fecha:
+                    type: string
+                    example: "2026-09-10"
+                  fuente:
+                    type: string
+                    example: "Sentinel-2 L2A"
+        '400':
+          description: Coordenadas inválidas o fuera de rango
+        '500':
+          description: Error al calcular NDVI (credenciales, red, o Sentinel Hub)
+
+  /ndvi/arbol/{arbol_id}:
+    post:
+      summary: Calcular y guardar NDVI de un árbol específico
+      description: Lee las coordenadas del árbol desde la base de datos, calcula su NDVI con Sentinel-2 y guarda el resultado en la columna NDVI de Info_arboles.
+      tags: [NDVI]
+      security: [{ X-UsuarioID: [] }]
+      parameters:
+        - name: arbol_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 1
+          description: ID del árbol (MedicionArbolID)
+      responses:
+        '200':
+          description: NDVI calculado y guardado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  arbol_id:
+                    type: integer
+                    example: 1
+                  numero_arbol:
+                    type: string
+                    example: "101"
+                  latitud:
+                    type: number
+                    example: -12.123456
+                  longitud:
+                    type: number
+                    example: -77.123456
+                  ndvi:
+                    type: number
+                    example: 0.7234
+                  fecha_imagen:
+                    type: string
+                    example: "2026-09-10"
+        '400':
+          description: El árbol no tiene coordenadas registradas
+        '404':
+          description: Árbol no encontrado
+        '500':
+          description: Error al calcular NDVI
+
+  /ndvi/bulk:
+    post:
+      summary: Calcular NDVI masivo para todos los árboles pendientes
+      description: |
+        Calcula el NDVI para **todos los árboles** que tengan coordenadas y que aún no tengan NDVI registrado.
+        
+        ⚠️ **ADVERTENCIA**: Este proceso puede tardar varios minutos dependiendo de la cantidad de árboles (cada consulta a Sentinel Hub tarda 10-30 segundos).
+      tags: [NDVI]
+      security: [{ X-UsuarioID: [] }]
+      responses:
+        '200':
+          description: Proceso completado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  procesados:
+                    type: integer
+                    description: Cantidad de árboles procesados exitosamente
+                    example: 15
+                  total:
+                    type: integer
+                    description: Total de árboles pendientes
+                    example: 15
+                  resultados:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        arbol_id:
+                          type: integer
+                        numero:
+                          type: string
+                        ndvi:
+                          type: number
+                  errores:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        arbol_id:
+                          type: integer
+                        numero:
+                          type: string
+                        error:
+                          type: string
+
+  /ndvi/estadisticas:
+    get:
+      summary: Estadísticas de NDVI agrupadas por Estado Sanitario
+      description: |
+        Devuelve estadísticas descriptivas del NDVI agrupadas por el estado sanitario de los árboles.
+        
+        Útil para el análisis académico de correlación entre el NDVI satelital y el estado fitosanitario observado en campo.
+      tags: [NDVI]
+      security: [{ X-UsuarioID: [] }]
+      responses:
+        '200':
+          description: Estadísticas calculadas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  resumen:
+                    type: array
+                    description: Estadísticas agrupadas por estado sanitario
+                    items:
+                      type: object
+                      properties:
+                        EstadoSanitario:
+                          type: string
+                          example: "BUENO"
+                        total_arboles:
+                          type: integer
+                          example: 8
+                        ndvi_promedio:
+                          type: number
+                          example: 0.7234
+                        ndvi_min:
+                          type: number
+                          example: 0.6543
+                        ndvi_max:
+                          type: number
+                          example: 0.8123
+                        ndvi_desviacion:
+                          type: number
+                          example: 0.0512
+                  detalle:
+                    type: array
+                    description: Lista detallada de cada árbol con su NDVI
+                    items:
+                      type: object
+                      properties:
+                        MedicionArbolID:
+                          type: integer
+                        NumeroArbol:
+                          type: string
+                        EstadoSanitario:
+                          type: string
+                        NDVI:
+                          type: number
+                        NDVI_fecha:
+                          type: string
+                          format: date
+                  total_con_ndvi:
+                    type: integer
+                    example: 15
+
+  # ============================================================
+  # ADMINISTRACIÓN (estructura de tablas)
+  # ============================================================
+  /admin/estructura/{tabla}:
+    get:
+      summary: Obtener la estructura de una tabla
+      tags: [Administración]
+      security: [{ X-UsuarioID: [] }]
+      parameters:
+        - name: tabla
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [Info_arboles, Especies, Usuarios, Roles]
+          description: Nombre de la tabla
+      responses:
+        '200':
+          description: Estructura de la tabla
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    Field:
+                      type: string
+                    Type:
+                      type: string
+                    Null:
+                      type: string
+                    Key:
+                      type: string
+                    Default:
+                      type: string
+                    Extra:
+                      type: string
+        '403':
+          description: Tabla no permitida
+
+components:
+  securitySchemes:
+    X-UsuarioID:
+      type: apiKey
+      in: header
+      name: X-UsuarioID
+      description: ID del usuario autenticado (ej. 1). Obténlo al hacer login.
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT obtenido en /auth/login
