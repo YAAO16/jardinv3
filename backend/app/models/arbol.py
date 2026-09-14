@@ -1,5 +1,6 @@
 from app.database import get_connection
 from app.utils.coordenadas import dms_to_dd
+from app.services.alometrico import calcular_biomasa_y_carbono
 from app.utils.validators import validate_numeric
 from app.services.alometrico import (
     calcular_biomasa_y_carbono,
@@ -8,6 +9,9 @@ from app.services.alometrico import (
     calcular_volumen_total,
     to_float
 )
+import logging
+from app.services.sentinel_service import SentinelService
+logger = logging.getLogger(__name__)
 
 def clean_boolean(value):
     if value is None:
@@ -283,3 +287,31 @@ class ArbolModel:
         conn.commit()
         cursor.close()
         conn.close()
+
+    def actualizar_datos_satelitales(self, lat: float, lon: float) -> dict:
+        """
+        Consulta datos de Sentinel-2 mediante SentinelService y actualiza 
+        los datos fitosanitarios del árbol.
+        """
+        try:
+            evaluacion = SentinelService.obtener_evaluacion_completa(lat, lon)
+            
+            datos_arbol = {
+                "latitud": evaluacion.get("latitud", lat),
+                "longitud": evaluacion.get("longitud", lon),
+                "ndvi_promedio": evaluacion.get("ndvi_promedio"),
+                "estado_dosel": evaluacion.get("estado_dosel"),
+                "fecha_analisis": evaluacion.get("fecha_analisis")
+            }
+            
+            self.latitud = datos_arbol["latitud"]
+            self.longitud = datos_arbol["longitud"]
+            self.ndvi = datos_arbol["ndvi_promedio"]
+            self.estado_fitosanitario = datos_arbol["estado_dosel"]
+            self.ultima_actualizacion = datos_arbol["fecha_analisis"]
+
+            return datos_arbol
+
+        except Exception as e:
+            logger.error(f"Error actualizando teledetección en árbol: {str(e)}")
+            raise e

@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
 from app.database import get_connection
-from app.services.sentinel_service import calcular_ndvi_promedio
+from app.services.sentinel_service import SentinelService
 from datetime import datetime
 
 sentinel_bp = Blueprint('sentinel', __name__, url_prefix='/sentinel')
@@ -31,7 +31,7 @@ def calcular_ndvi_arbol(arbol_id):
         conn.close()
         return jsonify({'error': 'El árbol no tiene coordenadas registradas'}), 400
 
-    ndvi, fecha_img, error = calcular_ndvi_promedio(float(lat), float(lon))
+    ndvi, fecha_img, error = SentinelService.calcular_ndvi_promedio(float(lat), float(lon))
 
     if error:
         cursor.close()
@@ -88,7 +88,7 @@ def calcular_ndvi_bulk():
 
     for arbol in arboles:
         try:
-            ndvi, fecha_img, error = calcular_ndvi_promedio(
+            ndvi, fecha_img, error = SentinelService.calcular_ndvi_promedio(
                 float(arbol['Latitud']),
                 float(arbol['Longitud'])
             )
@@ -155,3 +155,36 @@ def estadisticas_ndvi():
     conn.close()
 
     return jsonify(datos), 200
+
+
+@sentinel_bp.route('/ndvi-punto', methods=['GET'])
+def consultar_ndvi_coordenada():
+    """
+    Endpoint para consultar el NDVI de Sentinel-2 sobre un punto geográfico.
+    Parámetros Query: lat (float), lon (float)
+    """
+    try:
+        lat = request.args.get('lat', type=float)
+        lon = request.args.get('lon', type=float)
+
+        if lat is None or lon is None:
+            return jsonify({
+                "status": "error",
+                "message": "Se requieren los parámetros numéricos 'lat' y 'lon'"
+            }), 400
+
+        resultado = SentinelService.obtener_evaluacion_completa(lat, lon)
+        
+        if resultado.get("error"):
+            return jsonify({
+                "status": "partial_success",
+                "data": resultado
+            }), 207
+
+        return jsonify({
+            "status": "success",
+            "data": resultado
+        }), 200
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500

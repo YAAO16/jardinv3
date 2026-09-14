@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from datetime import datetime
 from app.database import get_connection
-from app.services.sentinel_service import calcular_ndvi_promedio
+from app.services.sentinel_service import SentinelService
 
 ndvi_bp = Blueprint('ndvi', __name__)
 
@@ -20,7 +20,7 @@ def obtener_ndvi(latitud, longitud):
         return jsonify({'error': 'Coordenadas fuera de rango'}), 400
 
     try:
-        ndvi, fecha_img, error = calcular_ndvi_promedio(lat, lon)
+        ndvi, fecha_img, error = SentinelService(lat, lon)
         if error:
             return jsonify({'error': error, 'latitud': lat, 'longitud': lon}), 500
 
@@ -64,7 +64,7 @@ def calcular_ndvi_arbol(arbol_id):
         conn.close()
         return jsonify({'error': 'El árbol no tiene coordenadas registradas'}), 400
 
-    ndvi, fecha_img, error = calcular_ndvi_promedio(float(lat), float(lon))
+    ndvi, fecha_img, error = SentinelService(float(lat), float(lon))
 
     if error:
         cursor.close()
@@ -126,7 +126,7 @@ def calcular_ndvi_bulk():
 
     for arbol in arboles:
         try:
-            ndvi, fecha_img, error = calcular_ndvi_promedio(
+            ndvi, fecha_img, error = SentinelService(
                 float(arbol['Latitud']),
                 float(arbol['Longitud'])
             )
