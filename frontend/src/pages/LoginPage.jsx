@@ -23,7 +23,7 @@ const LoginPage = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-forest-50 to-forest-100 p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-forest-700">🌳 JBV2</h1>
+          <h1 className="text-3xl font-bold text-forest-700">🌳 JARBOTA</h1>
           <p className="text-gray-500 mt-1">Inventario Forestal</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -71,7 +71,7 @@ const LoginPage = () => {
           </button>
         </form>
         <p className="text-center text-sm text-gray-400 mt-6">
-          Demo: adminjbitp / Admin@itp
+          
         </p>
       </div>
     </div>

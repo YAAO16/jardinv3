@@ -1,9 +1,9 @@
 openapi: 3.0.0
 info:
-  title: API Inventario Forestal JBV3
+  title: API Inventario Forestal JARBOTAV3
   description: |
     Sistema de gestión de inventario forestal con servicios ecosistémicos para JARBOTAV3.
-    
+
     ## Funcionalidades principales
     - **Autenticación**: Login con JWT.
     - **Usuarios**: CRUD completo (solo administradores).
@@ -16,8 +16,8 @@ info:
     - **Administración**: Estructura de tablas para gestión de campos.
   version: 3.0.0
   contact:
-    name: Soporte JBV3
-    email: soporte@jbv3.com
+    name: Soporte JARBOTAV3
+    email: yeinerangulo2020@itp.edu.co
 servers:
   - url: http://localhost:8001
     description: Servidor Localhost

@@ -1,7 +1,7 @@
 -- ============================================================
 -- SCRIPT COMPLETO PARA LA BASE DE DATOS INVENTARIO
--- PROYECTO JBV2 - SISTEMA DE INVENTARIO FORESTAL
--- BASADO EN EL REPOSITORIO: https://github.com/YAAO16/JBV2
+-- PROYECTO JARBOTAV3 - SISTEMA DE INVENTARIO FORESTAL
+-- BASADO EN EL REPOSITORIO: https://github.com/YAAO16/jardinv3
 -- VERSIÓN: 2.0 (CON MEJORAS DE SERVICIOS ECOSISTÉMICOS)
 -- ============================================================
 

@@ -1,0 +1,21 @@
+{
+  "name": "JBV3 — JARBOTA Inventario Forestal",
+  "short_name": "JARBOTA",
+  "description": "Sistema de inventario forestal con servicios ecosistémicos para el Jardín Botánico JARBOTA.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0f172a",
+  "theme_color": "#16a34a",
+  "lang": "es-CO",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "productivity", "utilities"]
+}

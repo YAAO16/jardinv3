@@ -3,11 +3,12 @@ import { FiImage, FiFileText } from 'react-icons/fi';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import toast from 'react-hot-toast';
+import { Can } from '../Can';
 
 const ExportButtons = ({ chartRef, title = 'grafico' }) => {
   const exportImage = async () => {
     if (!chartRef.current) return toast.error('No hay gráfico para exportar');
-    
+
     try {
       toast.loading('Generando imagen...', { id: 'export' });
       const canvas = await html2canvas(chartRef.current, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
@@ -24,7 +25,7 @@ const ExportButtons = ({ chartRef, title = 'grafico' }) => {
 
   const exportPDF = async () => {
     if (!chartRef.current) return toast.error('No hay gráfico para exportar');
-    
+
     try {
       toast.loading('Generando PDF...', { id: 'export' });
       const canvas = await html2canvas(chartRef.current, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
@@ -42,20 +43,22 @@ const ExportButtons = ({ chartRef, title = 'grafico' }) => {
   };
 
   return (
-    <div className="flex gap-2">
-      <button
-        onClick={exportImage}
-        className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition text-sm"
-      >
-        <FiImage /> Imagen
-      </button>
-      <button
-        onClick={exportPDF}
-        className="flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition text-sm"
-      >
-        <FiFileText /> PDF
-      </button>
-    </div>
+    <Can permiso="reportes_exportar_excel">
+      <div className="flex gap-2">
+        <button
+          onClick={exportImage}
+          className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition text-sm"
+        >
+          <FiImage /> Imagen
+        </button>
+        <button
+          onClick={exportPDF}
+          className="flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition text-sm"
+        >
+          <FiFileText /> PDF
+        </button>
+      </div>
+    </Can>
   );
 };
 

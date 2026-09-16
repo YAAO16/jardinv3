@@ -4,6 +4,11 @@ from app.database import get_connection
 
 atributo_bp = Blueprint('atributos', __name__, url_prefix='/atributos')
 
+
+# ============================================================
+# LECTURA
+# ============================================================
+
 @atributo_bp.route('', methods=['GET'])
 @require_auth
 @require_permission('atributos_ver')
@@ -16,21 +21,25 @@ def get_atributos():
     conn.close()
     return jsonify(data)
 
-@atributo_bp.route('', methods=['POST'])
+
+# ============================================================
+# ESCRITURA (Ingeniero y Administrador)
+# ============================================================
+
+@atributo_bp.route('/arbol/<int:arbol_id>', methods=['POST'])
 @require_auth
 @require_permission('atributos_crear')
 def create_atributo(arbol_id):
     data = request.json
-    data['MedicionArbolID'] = arbol_id
     conn = get_connection()
     cursor = conn.cursor()
     sql = """
-        INSERT INTO Info_arboles_AtributosDinamicos 
+        INSERT INTO Info_arboles_AtributosDinamicos
         (MedicionArbolID, NombreCampo, ValorTexto, ValorNumero, ValorFecha, ValorBooleano)
         VALUES (%s, %s, %s, %s, %s, %s)
     """
     values = (
-        data['MedicionArbolID'],
+        arbol_id,
         data['NombreCampo'],
         data.get('ValorTexto'),
         data.get('ValorNumero'),
@@ -44,7 +53,8 @@ def create_atributo(arbol_id):
     conn.close()
     return jsonify({'id': last_id}), 201
 
-@atributo_bp.route('/<int:atributo_id>', methods=['PUT'])
+
+@atributo_bp.route('/arbol/<int:arbol_id>/<int:atributo_id>', methods=['PUT'])
 @require_auth
 @require_permission('atributos_editar')
 def update_atributo(arbol_id, atributo_id):
@@ -53,7 +63,8 @@ def update_atributo(arbol_id, atributo_id):
     cursor = conn.cursor()
     sql = """
         UPDATE Info_arboles_AtributosDinamicos
-        SET NombreCampo = %s, ValorTexto = %s, ValorNumero = %s, ValorFecha = %s, ValorBooleano = %s
+        SET NombreCampo = %s, ValorTexto = %s, ValorNumero = %s,
+            ValorFecha = %s, ValorBooleano = %s
         WHERE ID = %s AND MedicionArbolID = %s
     """
     values = (
@@ -71,13 +82,17 @@ def update_atributo(arbol_id, atributo_id):
     conn.close()
     return jsonify({'ok': True}), 200
 
-@atributo_bp.route('/<int:atributo_id>', methods=['DELETE'])
+
+@atributo_bp.route('/arbol/<int:arbol_id>/<int:atributo_id>', methods=['DELETE'])
 @require_auth
-@require_permission('atributos_eliminar')
+@require_permission('atributos_editar')   # ⚠️ no existe 'atributos_eliminar'
 def delete_atributo(arbol_id, atributo_id):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM Info_arboles_AtributosDinamicos WHERE ID = %s AND MedicionArbolID = %s", (atributo_id, arbol_id))
+    cursor.execute(
+        "DELETE FROM Info_arboles_AtributosDinamicos WHERE ID = %s AND MedicionArbolID = %s",
+        (atributo_id, arbol_id)
+    )
     conn.commit()
     cursor.close()
     conn.close()

@@ -143,3 +143,28 @@ def require_permission(permiso_codigo):
         
         return decorated
     return decorator
+
+def require_admin(f):
+    """
+    Decorador que exige que el usuario autenticado tenga rol Administrador.
+    Úsalo SOLO en endpoints de gestión de usuarios, roles y permisos.
+    """
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        # Si la autenticación está desactivada, permitir acceso
+        if not AUTH_ENABLED:
+            return f(*args, **kwargs)
+
+        user = g.get('current_user')
+        if not user:
+            return jsonify({'error': 'Usuario no autenticado'}), 401
+
+        if user.get('RolNombre') != 'Administrador':
+            return jsonify({
+                'error': 'Acceso denegado',
+                'message': 'Solo el Administrador puede realizar esta acción'
+            }), 403
+
+        return f(*args, **kwargs)
+
+    return decorated

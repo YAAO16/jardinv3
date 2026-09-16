@@ -6,6 +6,7 @@ import {
 } from 'recharts'
 import { FiRefreshCw, FiDownload, FiActivity, FiTrendingUp, FiAward } from 'react-icons/fi'
 import { ndviApi } from '../api/ndviApi'
+import { Can } from '../components/Can'
 import toast from 'react-hot-toast'
 
 // Colores por estado sanitario
@@ -120,28 +121,35 @@ const AnalisisNDVIPage = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={handleCalcularBulk}
-            disabled={calculando}
-            className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition"
-          >
-            {calculando ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                Calculando...
-              </>
-            ) : (
-              <>
-                <FiRefreshCw /> Calcular NDVI Masivo
-              </>
-            )}
-          </button>
-          <button
-            onClick={exportarCSV}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition"
-          >
-            <FiDownload /> Exportar CSV
-          </button>
+          {/* ✅ Solo Ingeniero/Admin puede calcular NDVI masivo */}
+          <Can permiso="arboles_editar">
+            <button
+              onClick={handleCalcularBulk}
+              disabled={calculando}
+              className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition"
+            >
+              {calculando ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  Calculando...
+                </>
+              ) : (
+                <>
+                  <FiRefreshCw /> Calcular NDVI Masivo
+                </>
+              )}
+            </button>
+          </Can>
+
+          {/* ✅ Solo con permiso de exportar */}
+          <Can permiso="reportes_exportar_excel">
+            <button
+              onClick={exportarCSV}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition"
+            >
+              <FiDownload /> Exportar CSV
+            </button>
+          </Can>
         </div>
       </div>
 
@@ -186,7 +194,7 @@ const AnalisisNDVIPage = () => {
 
       {/* ========== GRÁFICOS ========== */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
+
         {/* Gráfico 1: NDVI Promedio por Estado Sanitario */}
         <div className="bg-white p-5 rounded-xl shadow-md">
           <h3 className="font-semibold text-gray-800 mb-4">📊 NDVI Promedio por Estado Sanitario</h3>
@@ -234,19 +242,19 @@ const AnalisisNDVIPage = () => {
         <ResponsiveContainer width="100%" height={400}>
           <ScatterChart margin={{ top: 20, right: 30, bottom: 40, left: 20 }}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis 
-              dataKey="index" 
-              name="Índice de Árbol" 
+            <XAxis
+              dataKey="index"
+              name="Índice de Árbol"
               label={{ value: 'Árbol #', position: 'insideBottom', offset: -10 }}
             />
-            <YAxis 
-              dataKey="ndvi" 
-              name="NDVI" 
+            <YAxis
+              dataKey="ndvi"
+              name="NDVI"
               domain={[0, 1]}
               label={{ value: 'NDVI', angle: -90, position: 'insideLeft' }}
             />
             <ZAxis range={[80, 80]} />
-            <Tooltip 
+            <Tooltip
               cursor={{ strokeDasharray: '3 3' }}
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
@@ -344,7 +352,7 @@ const AnalisisNDVIPage = () => {
           <li><strong>NDVI 0.2 - 0.4</strong>: Vegetación escasa o estresada.</li>
           <li><strong>NDVI &lt; 0.2</strong>: Suelo desnudo, agua o nubes.</li>
           <li className="mt-2 text-xs italic">
-            Nota: Sentinel-2 tiene resolución de 10 m/píxel. El NDVI refleja la respuesta espectral 
+            Nota: Sentinel-2 tiene resolución de 10 m/píxel. El NDVI refleja la respuesta espectral
             del dosel circundante más que el estado fitosanitario del tronco individual.
           </li>
         </ul>

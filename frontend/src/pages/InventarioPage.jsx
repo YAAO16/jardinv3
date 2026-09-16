@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { arbolesApi } from '../api/arbolesApi'
 import { especiesApi } from '../api/especiesApi'
 import { useAuth } from '../hooks/useAuth'
+import { usePermission } from '../hooks/usePermission'
+import { Can } from '../components/Can'
 import ArbolList from '../components/inventario/ArbolList'
 import ArbolForm from '../components/inventario/ArbolForm'
 import ArbolMap from '../components/inventario/ArbolMap'
@@ -10,10 +12,11 @@ import toast from 'react-hot-toast'
 
 const InventarioPage = () => {
   const { isAuthenticated } = useAuth()
+  const { can } = usePermission()
   const [arboles, setArboles] = useState([])
   const [especies, setEspecies] = useState([])
   const [loading, setLoading] = useState(true)
-  const [modoVista, setModoVista] = useState('list') // 'list' | 'map'
+  const [modoVista, setModoVista] = useState('list')
   const [showForm, setShowForm] = useState(false)
   const [editingArbol, setEditingArbol] = useState(null)
   const [selectedArbol, setSelectedArbol] = useState(null)
@@ -27,7 +30,7 @@ const InventarioPage = () => {
     try {
       const [arbolesData, especiesData] = await Promise.all([
         arbolesApi.getAll(),
-        especiesApi.getAll()
+        especiesApi.getAll(),
       ])
       setArboles(arbolesData || [])
       setEspecies(especiesData || [])
@@ -38,7 +41,6 @@ const InventarioPage = () => {
     }
   }
 
-  // Corregido: ya no ejecuta llamadas a la API (se procesaron en ArbolForm)
   const handleSuccess = async () => {
     await cargarDatos()
     setShowForm(false)
@@ -46,11 +48,19 @@ const InventarioPage = () => {
   }
 
   const handleEdit = (arbol) => {
+    if (!can('arboles_editar')) {
+      toast.error('No tienes permisos para editar')
+      return
+    }
     setEditingArbol(arbol)
     setShowForm(true)
   }
 
   const handleDelete = async (id) => {
+    if (!can('arboles_editar')) {
+      toast.error('No tienes permisos para eliminar')
+      return
+    }
     if (window.confirm('¿Eliminar este árbol?')) {
       try {
         await arbolesApi.delete(id)
@@ -78,38 +88,64 @@ const InventarioPage = () => {
         <div className="flex gap-2">
           <button
             onClick={() => setModoVista('list')}
-            className={`px-4 py-2 rounded-lg transition ${modoVista === 'list' ? 'bg-forest-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            className={`px-4 py-2 rounded-lg transition ${
+              modoVista === 'list'
+                ? 'bg-forest-600 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
           >
             <List size={18} className="inline mr-1" /> Lista
           </button>
           <button
             onClick={() => setModoVista('map')}
-            className={`px-4 py-2 rounded-lg transition ${modoVista === 'map' ? 'bg-forest-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            className={`px-4 py-2 rounded-lg transition ${
+              modoVista === 'map'
+                ? 'bg-forest-600 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
           >
             <Map size={18} className="inline mr-1" /> Mapa
           </button>
-          <button onClick={cargarDatos} className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition" title="Refrescar">
+          <button
+            onClick={cargarDatos}
+            className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition"
+            title="Refrescar"
+          >
             <RefreshCw size={18} className="text-gray-600" />
           </button>
-          {isAuthenticated && (
-            <button onClick={() => { setShowForm(!showForm); setEditingArbol(null) }} className="btn-primary">
-              <Plus size={18} className="inline mr-1" /> {showForm ? 'Cancelar' : 'Nuevo Árbol'}
+
+          {/* ✅ Solo Ingeniero/Admin con permiso 'arboles_crear' */}
+          <Can permiso="arboles_crear">
+            <button
+              onClick={() => {
+                setShowForm(!showForm)
+                setEditingArbol(null)
+              }}
+              className="btn-primary"
+            >
+              <Plus size={18} className="inline mr-1" />{' '}
+              {showForm ? 'Cancelar' : 'Nuevo Árbol'}
             </button>
-          )}
+          </Can>
         </div>
       </div>
 
-      {/* Formulario */}
-      {isAuthenticated && showForm && (
-        <div className="card">
-          <ArbolForm
-            especies={especies}
-            editArbol={editingArbol}
-            onSuccess={handleSuccess}
-            onCancel={() => { setShowForm(false); setEditingArbol(null) }}
-          />
-        </div>
-      )}
+      {/* Formulario — solo si tiene permiso */}
+      <Can permiso="arboles_crear">
+        {showForm && (
+          <div className="card">
+            <ArbolForm
+              especies={especies}
+              editArbol={editingArbol}
+              onSuccess={handleSuccess}
+              onCancel={() => {
+                setShowForm(false)
+                setEditingArbol(null)
+              }}
+            />
+          </div>
+        )}
+      </Can>
 
       {/* Contenido */}
       {loading ? (
@@ -125,7 +161,6 @@ const InventarioPage = () => {
               onEdit={handleEdit}
               onDelete={handleDelete}
               onSelect={handleSelect}
-              isAuthenticated={isAuthenticated}
             />
           )}
           {modoVista === 'map' && (

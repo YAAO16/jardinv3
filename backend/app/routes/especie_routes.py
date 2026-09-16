@@ -1,26 +1,40 @@
 from flask import Blueprint, request, jsonify
-# from app.middleware.auth_middleware import require_auth, require_permission
+from app.middleware.auth_middleware import require_auth, require_permission
 from app.models.especie import EspecieModel
 
 especie_bp = Blueprint('especies', __name__, url_prefix='/especies')
 
+
+# ============================================================
+# LECTURA (Visitante, Ingeniero, Administrador)
+# ============================================================
+
 @especie_bp.route('', methods=['GET'])
-# @require_auth
+@require_auth
+@require_permission('especies_ver')
 def get_especies():
     """Obtiene todas las especies"""
     especies = EspecieModel.get_all()
     return jsonify(especies)
 
+
 @especie_bp.route('/<int:especie_id>', methods=['GET'])
-# @require_auth
+@require_auth
+@require_permission('especies_ver')
 def get_especie(especie_id):
     especie = EspecieModel.get_by_id(especie_id)
     if not especie:
         return jsonify({'error': 'Especie no encontrada'}), 404
     return jsonify(especie)
 
+
+# ============================================================
+# ESCRITURA (Ingeniero y Administrador)
+# ============================================================
+
 @especie_bp.route('', methods=['POST'])
-# @require_permission('especies_crear')
+@require_auth
+@require_permission('especies_crear')
 def create_especie():
     data = request.json
     try:
@@ -29,8 +43,10 @@ def create_especie():
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
+
 @especie_bp.route('/<int:especie_id>', methods=['PUT'])
-# @require_permission('especies_editar')
+@require_auth
+@require_permission('especies_editar')
 def update_especie(especie_id):
     data = request.json
     try:
@@ -39,8 +55,10 @@ def update_especie(especie_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
+
 @especie_bp.route('/<int:especie_id>', methods=['DELETE'])
-# @require_permission('especies_eliminar')
+@require_auth
+@require_permission('especies_editar')   # ⚠️ no existe 'especies_eliminar'
 def delete_especie(especie_id):
     try:
         EspecieModel.delete(especie_id)

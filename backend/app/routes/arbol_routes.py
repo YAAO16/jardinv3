@@ -1,20 +1,28 @@
 from flask import Blueprint, request, jsonify, current_app
 import os
 from werkzeug.utils import secure_filename
-#from app.middleware.auth_middleware import require_auth, require_permission
+from app.middleware.auth_middleware import require_auth, require_permission
 from app.models.arbol import ArbolModel
 from app.database import get_connection
 
 arbol_bp = Blueprint('arboles', __name__, url_prefix='/arboles')
 
+
+# ============================================================
+# LECTURA (Visitante, Ingeniero, Administrador)
+# ============================================================
+
 @arbol_bp.route('', methods=['GET'])
-# @require_auth
+@require_auth
+@require_permission('arboles_ver')
 def get_arboles():
     arboles = ArbolModel.get_all()
     return jsonify(arboles)
 
+
 @arbol_bp.route('/mapa', methods=['GET'])
-# @require_auth
+@require_auth
+@require_permission('arboles_mapa')
 def get_arboles_mapa():
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
@@ -29,16 +37,24 @@ def get_arboles_mapa():
     conn.close()
     return jsonify(arboles)
 
+
 @arbol_bp.route('/<int:arbol_id>', methods=['GET'])
-# @require_auth
+@require_auth
+@require_permission('arboles_ver')
 def get_arbol(arbol_id):
     arbol = ArbolModel.get_by_id(arbol_id)
     if not arbol:
         return jsonify({'error': 'Árbol no encontrado'}), 404
     return jsonify(arbol)
 
+
+# ============================================================
+# ESCRITURA (Ingeniero y Administrador)
+# ============================================================
+
 @arbol_bp.route('', methods=['POST'])
-# @require_permission('arboles_crear')
+@require_auth
+@require_permission('arboles_crear')
 def create_arbol():
     data = request.json
     try:
@@ -47,9 +63,10 @@ def create_arbol():
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
+
 @arbol_bp.route('/<int:arbol_id>', methods=['PUT'])
-# @require_auth
-# @require_permission('arboles_editar')
+@require_auth
+@require_permission('arboles_editar')
 def update_arbol(arbol_id):
     data = request.get_json()
     if not data:
@@ -60,8 +77,10 @@ def update_arbol(arbol_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
+
 @arbol_bp.route('/<int:arbol_id>', methods=['DELETE'])
-# @require_permission('arboles_eliminar')
+@require_auth
+@require_permission('arboles_editar')   # ⚠️ no existe 'arboles_eliminar'; se usa editar
 def delete_arbol(arbol_id):
     try:
         ArbolModel.delete(arbol_id)
@@ -69,14 +88,20 @@ def delete_arbol(arbol_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
-# ===== Carga de imagen =====
+
+# ============================================================
+# CARGA DE IMAGEN
+# ============================================================
+
 @arbol_bp.route('/<int:arbol_id>/imagen', methods=['OPTIONS'])
 def handle_options_imagen(arbol_id):
+    # El OPTIONS se deja sin autenticación para el preflight CORS
     return '', 200
 
+
 @arbol_bp.route('/<int:arbol_id>/imagen', methods=['POST'])
-# @require_auth
-# @require_permission('arboles_editar')
+@require_auth
+@require_permission('imagenes_subir')
 def upload_imagen(arbol_id):
     arbol = ArbolModel.get_by_id(arbol_id)
     if not arbol:
@@ -102,4 +127,3 @@ def upload_imagen(arbol_id):
     ArbolModel.update_imagen(arbol_id, imagen_url)
 
     return jsonify({'message': 'Imagen subida correctamente', 'url': imagen_url}), 200
-

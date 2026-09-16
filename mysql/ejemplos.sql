@@ -1,5 +1,5 @@
 -- ============================================================
--- DATOS DE EJEMPLO PARA EL SISTEMA JBV2
+-- DATOS DE EJEMPLO PARA EL SISTEMA JARBOTAV3
 -- ============================================================
 
 USE inventario;
